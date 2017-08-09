@@ -1,0 +1,60 @@
+﻿@model Lykke.Job.LucyTelegramBot.Models.SignInModel
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Lykke Telegram Bot Auth</title>
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <script src="http://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+    <meta name="google-signin-client_id" content="@Model.GoogleApiClientId">
+    <meta name="google-signin-scope" content="profile email">
+    <meta name="google-signin-fetch_basic_profile" content="false">
+</head>
+<body>
+<div>       
+    <div class="panel panel-default" style="width: 500px; margin: 50px auto">
+
+        <div class="panel-heading">
+            <table style="width: 100%">
+                <tr>
+                    <td style="text-align: left">
+                        <h3 class="panel-title">Sign in</h3>
+                    </td>                    
+                </tr>
+            </table>
+        </div>
+        <div class="panel-body" style="text-align: right;">
+            <table style="width: 100%;">
+                <tr>                    
+                    <td style="text-align: center;">
+                        <div id="googleSignIn" class="g-signin2 disableOnRequest" data-onsuccess="googleSignIn" data-theme="dark" data-prompt="select_account"></div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+
+    <script>
+        function googleSignIn(googleUser) {
+            var idToken = googleUser.getAuthResponse().id_token;
+            $.ajax({
+                url: '/Account/Auth',
+                method: 'POST',
+                dataType: 'json',
+                data: {
+                    googleSignInIdToken: idToken
+                },
+                success: function (data) {
+                    console.log(data);
+                    if (data.status == 'Success') {
+                        location.href = data.redirectUrl;
+                    }
+                }
+            });
+        }
+    </script>
+</div>
+</body>
+</html>
