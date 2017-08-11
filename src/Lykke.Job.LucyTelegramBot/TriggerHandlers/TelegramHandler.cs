@@ -23,7 +23,7 @@ namespace Lykke.Job.LucyTelegramBot.TriggerHandlers
             await _messagePoller.PullAsync();                
         }
 
-        [QueueTrigger("lucy-tg-updates")]
+        [QueueTrigger("lucy-tg-updates", 500)]
         public async Task QueueTriggeredHandler(string msg)
         {            
             await _messageHandler.HandleAsync(msg);            

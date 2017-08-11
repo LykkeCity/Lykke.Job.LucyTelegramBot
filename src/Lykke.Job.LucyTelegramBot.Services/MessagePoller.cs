@@ -13,12 +13,14 @@ namespace Lykke.Job.LucyTelegramBot.Services
         private readonly IOffsetRepository _offsetRepository;
         private readonly IQueueExt _queueExt;
         private readonly ITelegramBotClient _telegramBotClient;
+        private readonly IHandledMessagesRepository _handledMessagesRepository;
 
-        public MessagePoller(IOffsetRepository offsetRepository, IQueueExt queueExt, ITelegramBotClient telegramBotClient)
+        public MessagePoller(IOffsetRepository offsetRepository, IQueueExt queueExt, ITelegramBotClient telegramBotClient, IHandledMessagesRepository handledMessagesRepository)
         {
             _offsetRepository = offsetRepository;
             _queueExt = queueExt;
             _telegramBotClient = telegramBotClient;
+            _handledMessagesRepository = handledMessagesRepository;
         }
 
         public async Task PullAsync()
@@ -33,7 +35,10 @@ namespace Lykke.Job.LucyTelegramBot.Services
                 if (message == null)
                     continue;
 
-                await _queueExt.PutRawMessageAsync(JsonConvert.SerializeObject(message));
+                if (await _handledMessagesRepository.TryHandleMessage(update.Message.MessageId))
+                {
+                    await _queueExt.PutRawMessageAsync(JsonConvert.SerializeObject(message));
+                }
 
                 if (update.Id > offset)
                     await _offsetRepository.SetOffset(update.Id);

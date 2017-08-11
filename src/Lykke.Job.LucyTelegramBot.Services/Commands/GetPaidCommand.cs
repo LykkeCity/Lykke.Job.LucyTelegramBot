@@ -31,7 +31,7 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
             await _botClient.SendTextMessageAsync(message.Chat.Id, _settings.Messages.GetPaid["Hello"], ParseMode.Default, false, false, 0, KeyBoards.MainKeyboard);
 
             var template = await _blobStorage.GetAsync("templates", "invoice.xlsx");
-            var file = new FileToSend("invoice.xlsx", template);
+            var file = new FileToSend("invoice template.xlsx", template);
 
             await _botClient.SendDocumentAsync(message.Chat.Id, file);
             await _botClient.SendTextMessageAsync(message.Chat.Id, _settings.Messages.GetPaid["SendInfo"], ParseMode.Default, false, false, 0, KeyBoards.MainKeyboard);

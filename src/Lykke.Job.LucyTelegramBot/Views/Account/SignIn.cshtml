@@ -6,7 +6,7 @@
 <head>
     <title>Lykke Telegram Bot Auth</title>
     <script src="https://apis.google.com/js/platform.js" async defer></script>
-    <script src="http://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <meta name="google-signin-client_id" content="@Model.GoogleApiClientId">
     <meta name="google-signin-scope" content="profile email">
     <meta name="google-signin-fetch_basic_profile" content="false">
@@ -46,8 +46,7 @@
                 data: {
                     googleSignInIdToken: idToken
                 },
-                success: function (data) {
-                    console.log(data);
+                success: function (data) {                    
                     if (data.status == 'Success') {
                         location.href = data.redirectUrl;
                     }

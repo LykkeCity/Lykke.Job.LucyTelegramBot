@@ -48,8 +48,10 @@ namespace Lykke.Job.LucyTelegramBot.Modules
                 new AzureTableStorage<OffsetRecord>(_settings.LucyTelegramBotJob.Db.DataConnString, "TgUpdatesOffset", _log))).As<IOffsetRepository>();
             builder.RegisterInstance(new TgEmployeeRepository(
                 new AzureTableStorage<TgEmployee>(_settings.LucyTelegramBotJob.Db.DataConnString, "TgEmployees", _log))).As<ITgEmployeeRepository>();
+            builder.RegisterInstance(new HandledMessagesRepository(
+                new AzureTableStorage<HandledMessageRecord>(_settings.LucyTelegramBotJob.Db.DataConnString, "TgHandledMessages", _log))).As<IHandledMessagesRepository>();
             builder.RegisterInstance(new AzureBlobStorage(_settings.LucyTelegramBotJob.Db.DataConnString)).As<IBlobStorage>();
-
+            
             builder.RegisterInstance(new AzureQueueExt(_settings.LucyTelegramBotJob.TriggerQueueConnectionString, "lucy-tg-updates")).As<IQueueExt>();
             
             builder.RegisterType<MessageHandler>()
@@ -68,11 +70,11 @@ namespace Lykke.Job.LucyTelegramBot.Modules
             // NOTE: You can implement your own poison queue notifier. See https://github.com/LykkeCity/JobTriggers/blob/master/readme.md
             // builder.Register<PoisionQueueNotifierImplementation>().As<IPoisionQueueNotifier>();
 
-            builder.RegisterType<TelegramBotClient>()
-                .As<ITelegramBotClient>()
-                .WithParameter("token", _settings.LucyTelegramBotJob.Token)
-                .SingleInstance();
+            var telegramBot = new TelegramBotClient(_settings.LucyTelegramBotJob.Token);
+            telegramBot.SetWebhookAsync(string.Empty).Wait();
 
+            builder.RegisterInstance(telegramBot).As<ITelegramBotClient>();
+            
             builder.Populate(_services);
         }
     }

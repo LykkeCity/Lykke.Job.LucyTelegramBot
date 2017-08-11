@@ -32,7 +32,7 @@ namespace Lykke.Job.LucyTelegramBot
 
                 webHost = new WebHostBuilder()
                     .UseKestrel()
-                    .UseUrls("http://*:55560")
+                    .UseUrls("http://*:57317")
                     .UseContentRoot(Directory.GetCurrentDirectory())                    
                     .UseStartup<Startup>()
                     .UseApplicationInsights()
