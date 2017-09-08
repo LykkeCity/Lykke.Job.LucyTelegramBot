@@ -1,20 +1,19 @@
-﻿using System;
-using Autofac;
+﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using Common.Log;
-using Lykke.Job.LucyTelegramBot.Core;
 using Lykke.Job.LucyTelegramBot.Core.Services;
 using Lykke.Job.LucyTelegramBot.Core.Telegram;
 using Lykke.Job.LucyTelegramBot.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Telegram.Bot;
-using System.Runtime;
 using AzureStorage;
 using AzureStorage.Blob;
 using AzureStorage.Queue;
 using Lykke.Job.LucyTelegramBot.AzureRepositories.Telegram;
+using Lykke.Job.LucyTelegramBot.Core;
 using Lykke.Job.LucyTelegramBot.Services.Commands;
+using Lykke.Service.EmailSender;
 
 namespace Lykke.Job.LucyTelegramBot.Modules
 {
@@ -45,27 +44,35 @@ namespace Lykke.Job.LucyTelegramBot.Modules
                 .SingleInstance();
 
             builder.RegisterInstance(new OffsetRepository(
-                new AzureTableStorage<OffsetRecord>(_settings.LucyTelegramBotJob.Db.DataConnString, "TgUpdatesOffset", _log))).As<IOffsetRepository>();
+                AzureTableStorage<OffsetRecord>.Create(() => _settings.LucyTelegramBotJob.Db.DataConnString, "TgUpdatesOffset", _log))).As<IOffsetRepository>();
             builder.RegisterInstance(new TgEmployeeRepository(
-                new AzureTableStorage<TgEmployee>(_settings.LucyTelegramBotJob.Db.DataConnString, "TgEmployees", _log))).As<ITgEmployeeRepository>();
+                AzureTableStorage<TgEmployee>.Create(() => _settings.LucyTelegramBotJob.Db.DataConnString, "TgEmployees", _log))).As<ITgEmployeeRepository>();
             builder.RegisterInstance(new HandledMessagesRepository(
-                new AzureTableStorage<HandledMessageRecord>(_settings.LucyTelegramBotJob.Db.DataConnString, "TgHandledMessages", _log))).As<IHandledMessagesRepository>();
+                AzureTableStorage<HandledMessageRecord>.Create(() => _settings.LucyTelegramBotJob.Db.DataConnString, "TgHandledMessages", _log))).As<IHandledMessagesRepository>();
+            builder.RegisterInstance(new TgUserStateRepository(
+                AzureTableStorage<TgUserStateEntity>.Create(() => _settings.LucyTelegramBotJob.Db.DataConnString, "TgUserStates", _log))).As<ITgUserStateRepository>();
             builder.RegisterInstance(new AzureBlobStorage(_settings.LucyTelegramBotJob.Db.DataConnString)).As<IBlobStorage>();
             
-            builder.RegisterInstance(new AzureQueueExt(_settings.LucyTelegramBotJob.TriggerQueueConnectionString, "lucy-tg-updates")).As<IQueueExt>();
+            builder.RegisterInstance(new AzureQueueExt(_settings.LucyTelegramBotJob.Db.TriggerQueueConnectionString, "lucy-tg-updates")).As<IQueueExt>();
             
             builder.RegisterType<MessageHandler>()
                 .As<IMessageHandler>();
             builder.RegisterType<MessagePoller>()
                 .As<IMessagePoller>();
 
-            builder.RegisterType<BotCommandFactory>().As<IBotCommandFactory>();
-            builder.RegisterType<StartCommand>().As<IBotCommand>();
-            builder.RegisterType<PostBioCommand>().As<IBotCommand>();
-            builder.RegisterType<NewbieGuideCommand>().As<IBotCommand>();
-            builder.RegisterType<InfoCommand>().As<IBotCommand>();
-            builder.RegisterType<GetPaidCommand>().As<IBotCommand>();
-            builder.RegisterType<ContractorsCommand>().As<IBotCommand>();
+            builder.RegisterType<BotService>().As<IBotService>().SingleInstance();
+            builder.RegisterType<BotCommandHandlerFactory>().As<IBotCommandHandlerFactory>().PropertiesAutowired(PropertyWiringOptions.AllowCircularDependencies).SingleInstance();
+            builder.RegisterType<KeyboardsFactory>().AsSelf().SingleInstance();
+
+            builder.RegisterType<SimpleTextResponseCommand>().As<IBotCommandHandler>().SingleInstance();
+            builder.RegisterType<BackCommand>().As<IBotCommandHandler>().SingleInstance();
+            builder.RegisterType<StartCommand>().As<IBotCommandHandler>().SingleInstance();
+            builder.RegisterType<GetPaidCommand>().As<IBotCommandHandler>().SingleInstance();
+            builder.RegisterType<InfoCommand>().As<IBotCommandHandler>().SingleInstance();
+            builder.RegisterType<PostBioCommand>().As<IBotCommandHandler>().SingleInstance();
+            builder.RegisterType<FeedbackCommand>().As<IBotCommandHandler>().SingleInstance();
+
+            builder.RegisterType<EmailFacadeService>().As<IEmailFacadeService>();
 
             // NOTE: You can implement your own poison queue notifier. See https://github.com/LykkeCity/JobTriggers/blob/master/readme.md
             // builder.Register<PoisionQueueNotifierImplementation>().As<IPoisionQueueNotifier>();
@@ -74,7 +81,8 @@ namespace Lykke.Job.LucyTelegramBot.Modules
             telegramBot.SetWebhookAsync(string.Empty).Wait();
 
             builder.RegisterInstance(telegramBot).As<ITelegramBotClient>();
-            
+            builder.RegisterEmailSenderService(_settings.LucyTelegramBotJob.EmailSenderServiceUrl, _log);
+
             builder.Populate(_services);
         }
     }

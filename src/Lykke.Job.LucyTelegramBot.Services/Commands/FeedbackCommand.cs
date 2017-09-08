@@ -10,23 +10,29 @@ using Telegram.Bot.Types.Enums;
 
 namespace Lykke.Job.LucyTelegramBot.Services.Commands
 {
-    public class InfoCommand : IBotCommandHandler
+    public class FeedbackCommand : IBotCommandHandler
     {
         private readonly IBotService _botService;
+        private readonly IEmailFacadeService _emailFacadeService;
         private readonly ITgEmployeeRepository _employeeRepository;
+        private readonly KeyboardsFactory _keyboardsFactory;
         private readonly LucyTelegramBotSettings _settings;
 
-        public InfoCommand(
+        public FeedbackCommand(
             IBotService botService,
+            IEmailFacadeService emailFacadeService,
             ITgEmployeeRepository employeeRepository, 
+            KeyboardsFactory keyboardsFactory,
             LucyTelegramBotSettings settings)
         {
             _botService = botService;
+            _emailFacadeService = emailFacadeService;
             _employeeRepository = employeeRepository;
+            _keyboardsFactory = keyboardsFactory;
             _settings = settings;
         }
 
-        public string[] SupportedCommands => new[] { BotCommands.GetUserInfo };
+        public string[] SupportedCommands => new[] {BotCommands.Feedback};
 
         public async Task Execute(LykkeBotCommand command, Message message)
         {
@@ -35,13 +41,18 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
 
         public async Task Reply(LykkeBotCommand command, Message message)
         {
-            var userinfo = await _employeeRepository.Find(message.Text);
+            try
+            {
+                await _emailFacadeService.SendFeedbackEmail(_settings.FeedbackEmail,
+                    $"{message.From.LastName} {message.From.FirstName}", message.Text);
+            }
+            catch
+            {
+                await _botService.SendTextMessageAsync(message, command, _settings.Messages.ErrorSendingFeedback);
+                return;
+            }
 
-            string text = userinfo != null
-                ? $"{userinfo.FirstName} {userinfo.LastName}: {userinfo.Bio ?? _settings.Messages.NoUserInfo}"
-                : _settings.Messages.UserNotFound;
-
-            await _botService.SendTextMessageAsync(message, command, text);
+            await _botService.SendTextMessageAsync(message, command, command.ReplyText);
         }
     }
 }

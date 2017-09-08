@@ -1,33 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
+using Lykke.Job.LucyTelegramBot.Core;
+using Lykke.Job.LucyTelegramBot.Core.Services;
 using Lykke.Job.LucyTelegramBot.Core.Telegram;
-using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace Lykke.Job.LucyTelegramBot.Services.Commands
 {
-    public class StartCommand : IBotCommand
+    public class StartCommand : IBotCommandHandler
     {
-        private readonly ITelegramBotClient _botClient;
-        private readonly AppSettings.LucyTelegramBotSettings _settings;
+        private readonly IBotService _botService;
         private readonly ITgEmployeeRepository _employeeRepository;
 
-        public StartCommand(ITelegramBotClient botClient, AppSettings.LucyTelegramBotSettings settings, ITgEmployeeRepository employeeRepository)
+        public StartCommand(
+            IBotService botService,
+            KeyboardsFactory keyboardsFactory,
+            ITgEmployeeRepository employeeRepository)
         {
-            _botClient = botClient;
-            _settings = settings;
+            _botService = botService;
             _employeeRepository = employeeRepository;
         }
 
-        public IEnumerable<string> SupportedCommands
-        {
-            get { yield return BotCommands.Start; }
-        }
+        public string[] SupportedCommands => new[] { BotCommands.Start, BotCommands.StartWord };
 
-        public async Task Execute(Message message)
+        public async Task Execute(LykkeBotCommand command, Message message)
         {
             var chatId = message.Chat.Id;
             var id = string.Join(string.Empty, message.Text.Skip(BotCommands.Start.Length + 1));
@@ -35,18 +31,12 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
             if (!string.IsNullOrWhiteSpace(id))
                 await _employeeRepository.UpdateEmployeeInfo(id, chatId, message.From.Username, message.From.FirstName, message.From.LastName);
 
-            var emp = !string.IsNullOrWhiteSpace(id)
-                ? await _employeeRepository.Get(id)
-                : await _employeeRepository.Get(chatId);
-                        
-            if (emp != null)
-            {
-                await _botClient.SendTextMessageAsync(chatId, _settings.Messages.Start, ParseMode.Default, false, false, 0, KeyBoards.MainKeyboard);
-            }
-            else
-            {
-                await _botClient.SendTextMessageAsync(chatId, _settings.Messages.Auth);
-            }            
+            await _botService.SendTextMessageAsync(message, command, command.IntroText);
+        }
+
+        public Task Reply(LykkeBotCommand command, Message message)
+        {
+            return Task.FromResult(0);
         }
     }
 }

@@ -1,14 +1,12 @@
 ﻿using System;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using AzureStorage.Tables;
 using Common.Log;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Job.LucyTelegramBot.Core;
 using Lykke.Job.LucyTelegramBot.Models;
 using Lykke.Job.LucyTelegramBot.Modules;
-using Lykke.Job.LucyTelegramBot.Services;
 using Lykke.JobTriggers.Extenstions;
 using Lykke.Logs;
 using Lykke.SettingsReader;
@@ -56,11 +54,12 @@ namespace Lykke.Job.LucyTelegramBot
             var appSettings = Environment.IsDevelopment()
                 ? Configuration.Get<AppSettings>()
                 : HttpSettingsLoader.Load<AppSettings>(Configuration.GetValue<string>("SettingsUrl"));
+
             var log = CreateLogWithSlack(services, appSettings);
 
             builder.RegisterModule(new JobModule(appSettings, log));
 
-            if (string.IsNullOrWhiteSpace(appSettings.LucyTelegramBotJob.TriggerQueueConnectionString))
+            if (string.IsNullOrWhiteSpace(appSettings.LucyTelegramBotJob.Db.TriggerQueueConnectionString))
             {
                 builder.AddTriggers();
             }
@@ -68,7 +67,7 @@ namespace Lykke.Job.LucyTelegramBot
             {
                 builder.AddTriggers(pool =>
                 {
-                    pool.AddDefaultConnection(appSettings.LucyTelegramBotJob.TriggerQueueConnectionString);
+                    pool.AddDefaultConnection(appSettings.LucyTelegramBotJob.Db.TriggerQueueConnectionString);
                 });
             }
 
@@ -101,36 +100,19 @@ namespace Lykke.Job.LucyTelegramBot
 
         private static ILog CreateLogWithSlack(IServiceCollection services, AppSettings settings)
         {
-            LykkeLogToAzureStorage logToAzureStorage = null;
+            var consoleLogger = new LogToConsole();
+            var aggregateLogger = new AggregateLogger();
 
-            var logToConsole = new LogToConsole();
-            var logAggregate = new LogAggregate();
+            aggregateLogger.AddLog(consoleLogger);
 
-            logAggregate.AddLogger(logToConsole);
-
-            var dbLogConnectionString = settings.LucyTelegramBotJob.Db.LogsConnString;
-
-            // Creating azure storage logger, which logs own messages to concole log
-            if (!string.IsNullOrEmpty(dbLogConnectionString) && !(dbLogConnectionString.StartsWith("${") && dbLogConnectionString.EndsWith("}")))
-            {
-                logToAzureStorage = new LykkeLogToAzureStorage("Lykke.Job.LucyTelegramBot", new AzureTableStorage<LogEntity>(
-                    dbLogConnectionString, "LucyTelegramBotLog", logToConsole));
-
-                logAggregate.AddLogger(logToAzureStorage);
-            }
-
-            // Creating aggregate log, which logs to console and to azure storage, if last one specified
-            var log = logAggregate.CreateLogger();
-
-            // Creating slack notification service, which logs own azure queue processing messages to aggregate log
             var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueIntegration.AzureQueueSettings
             {
                 ConnectionString = settings.SlackNotifications.AzureQueue.ConnectionString,
                 QueueName = settings.SlackNotifications.AzureQueue.QueueName
-            }, log);
+            }, aggregateLogger);
 
-            // Finally, setting slack notification for azure storage log, which will forward necessary message to slack service
-            logToAzureStorage?.SetSlackNotification(slackService);
+            var log = services.UseLogToAzureStorage(settings.LucyTelegramBotJob.Db.LogsConnString, slackService,
+                "LucyTelegramBotLog", new LogToConsole());
 
             return log;
         }

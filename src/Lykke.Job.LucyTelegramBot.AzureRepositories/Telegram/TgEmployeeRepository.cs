@@ -101,9 +101,11 @@ namespace Lykke.Job.LucyTelegramBot.AzureRepositories.Telegram
         {
             var emp = (await _tableStorage.GetDataAsync(e => e.ChatId == chatId)).SingleOrDefault();
 
-            emp.Bio = bio;            
-
-            await _tableStorage.InsertOrMergeAsync(emp);
+            if (emp != null)
+            {
+                emp.Bio = bio;
+                await _tableStorage.InsertOrMergeAsync(emp);
+            }
         }
     }
 }

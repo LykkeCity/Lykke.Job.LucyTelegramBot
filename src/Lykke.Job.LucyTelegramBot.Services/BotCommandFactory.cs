@@ -1,26 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Lykke.Job.LucyTelegramBot.Core.Telegram;
 
 namespace Lykke.Job.LucyTelegramBot.Services
 {
-    public interface IBotCommandFactory
+    public interface IBotCommandHandlerFactory
     {
-        IBotCommand GetCommand(string botCommand);
+        IBotCommandHandler GetCommand(string botCommand);
     }
 
-    public class BotCommandFactory : IBotCommandFactory
+    public class BotCommandHandlerFactory : IBotCommandHandlerFactory
     {
-        private readonly IEnumerable<IBotCommand> _commands;
+        public IEnumerable<IBotCommandHandler> Handlers { get; set; }
 
-        public BotCommandFactory(IEnumerable<IBotCommand> commands)
+        public IBotCommandHandler GetCommand(string botCommand)
         {
-            _commands = commands;
-        }
+            var handler = Handlers.FirstOrDefault(command => command.SupportedCommands.Any(c => botCommand.Equals(c, StringComparison.InvariantCultureIgnoreCase)));
 
-        public IBotCommand GetCommand(string botCommand)
-        {
-            return _commands.FirstOrDefault(command => command.SupportedCommands.Any(botCommand.StartsWith));
+            return handler ?? Handlers.FirstOrDefault(item => item.SupportedCommands.Length == 0);
         }
     }
 }

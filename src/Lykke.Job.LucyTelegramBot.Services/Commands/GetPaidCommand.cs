@@ -1,40 +1,48 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using AzureStorage;
+using Lykke.Job.LucyTelegramBot.Core;
+using Lykke.Job.LucyTelegramBot.Core.Services;
 using Lykke.Job.LucyTelegramBot.Core.Telegram;
-using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace Lykke.Job.LucyTelegramBot.Services.Commands
 {
-    public class GetPaidCommand : IBotCommand
+    public class GetPaidCommand : IBotCommandHandler
     {
-        private readonly ITelegramBotClient _botClient;
+        private readonly IBotService _botService;
         private readonly IBlobStorage _blobStorage;
-        private readonly AppSettings.LucyTelegramBotSettings _settings;
 
-        public GetPaidCommand(ITelegramBotClient botClient, IBlobStorage blobStorage, AppSettings.LucyTelegramBotSettings settings)
+        public GetPaidCommand(
+            IBotService botService,
+            IBlobStorage blobStorage)
         {
-            _botClient = botClient;
+            _botService = botService;
             _blobStorage = blobStorage;
-            _settings = settings;
         }
 
-        public IEnumerable<string> SupportedCommands
+        public string[] SupportedCommands => new[] { BotCommands.GetPaid };
+
+        public async Task Execute(LykkeBotCommand command, Message message)
         {
-            get { yield return BotCommands.GetPaid; }
+            await _botService.SendTextMessageAsync(message, command, command.IntroText);
+
+            try
+            {
+                var template = await _blobStorage.GetAsync("templates", "invoice.xlsx");
+                var file = new FileToSend("invoice template.xlsx", template);
+
+                await _botService.SendDocumentAsync(message, file);
+            }
+            catch
+            {
+            }
+
+            await _botService.SendTextMessageAsync(message, command, command.ReplyText);
         }
 
-        public async Task Execute(Message message)
+        public Task Reply(LykkeBotCommand command, Message message)
         {
-            await _botClient.SendTextMessageAsync(message.Chat.Id, _settings.Messages.GetPaid["Hello"], ParseMode.Default, false, false, 0, KeyBoards.MainKeyboard);
-
-            var template = await _blobStorage.GetAsync("templates", "invoice.xlsx");
-            var file = new FileToSend("invoice template.xlsx", template);
-
-            await _botClient.SendDocumentAsync(message.Chat.Id, file);
-            await _botClient.SendTextMessageAsync(message.Chat.Id, _settings.Messages.GetPaid["SendInfo"], ParseMode.Default, false, false, 0, KeyBoards.MainKeyboard);
+            return Task.FromResult(0);
         }
     }
 }
