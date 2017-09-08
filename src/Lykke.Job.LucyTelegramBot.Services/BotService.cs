@@ -55,8 +55,7 @@ namespace Lykke.Job.LucyTelegramBot.Services
                 }
             }
 
-            await _botClient.SendTextMessageAsync(message.Chat.Id, _settings.Messages.CommandNotFound, ParseMode.Default, false, false, 0,
-                _keyboardsFactory.GetKeyboard(BotCommands.Start));
+            await _botClient.SendTextMessageAsync(message.Chat.Id, _settings.Messages.CommandNotFound, ParseMode.Markdown);
         }
 
         public async Task SendTextMessageAsync(Message message, LykkeBotCommand command, string text)
