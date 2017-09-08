@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Lykke.SettingsReader.Attributes;
 
 namespace Lykke.Job.LucyTelegramBot.Core
 {
@@ -34,8 +35,11 @@ namespace Lykke.Job.LucyTelegramBot.Core
     public class LykkeBotCommand
     {
         public string Name { get; set; }
+        [Optional]
         public string IntroText { get; set; }
+        [Optional]
         public string ReplyText { get; set; }
+        [Optional]
         public string[] Commands { get; set; } = Array.Empty<string>();
         public bool HasReply => !string.IsNullOrEmpty(ReplyText);
     }
