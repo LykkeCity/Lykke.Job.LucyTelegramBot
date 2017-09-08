@@ -38,7 +38,7 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
             var userinfo = await _employeeRepository.Find(message.Text);
 
             string text = userinfo != null
-                ? $"{userinfo.FirstName} {userinfo.LastName}: {userinfo.Bio ?? _settings.Messages.NoUserInfo}"
+                ? $"*{userinfo.FirstName} {userinfo.LastName}:*\r\n{userinfo.Bio ?? _settings.Messages.NoUserInfo}"
                 : _settings.Messages.UserNotFound;
 
             await _botService.SendTextMessageAsync(message, command, text);
