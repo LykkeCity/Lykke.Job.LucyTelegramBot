@@ -49,7 +49,7 @@ namespace Lykke.Job.LucyTelegramBot.Tests
 
             Assert.Equal(1, keyboard.Keyboard.Length);
             Assert.Equal(2, keyboard.Keyboard[0].Length);
-            Assert.Equal("Back", keyboard.Keyboard[0][1].Text);
+            Assert.Equal("⬅️ Back", keyboard.Keyboard[0][1].Text);
         }
     }
 }
