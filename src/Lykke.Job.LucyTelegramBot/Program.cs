@@ -1,9 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Runtime.Loader;
-using System.Threading;
-using System.Threading.Tasks;
-using Lykke.JobTriggers.Triggers;
 using Microsoft.AspNetCore.Hosting;
 
 namespace Lykke.Job.LucyTelegramBot
@@ -12,53 +8,24 @@ namespace Lykke.Job.LucyTelegramBot
     {
         static void Main(string[] args)
         {
-            var webHostCancellationTokenSource = new CancellationTokenSource();
-            IWebHost webHost = null;
-            TriggerHost triggerHost = null;
-            Task webHostTask = null;
-            Task triggerHostTask = null;
-            var end = new ManualResetEvent(false);
+            Console.WriteLine($"LucyTelegramBot version {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion}");
+#if DEBUG
+            Console.WriteLine("Is DEBUG");
+#else
+            Console.WriteLine("Is RELEASE");
+#endif
 
-            try
-            {
-                AssemblyLoadContext.Default.Unloading += ctx =>
-                {
-                    Console.WriteLine("SIGTERM recieved");
+            var webHost = new WebHostBuilder()
+                .UseKestrel()
+                .UseUrls("http://*:57317")
+                .UseContentRoot(Directory.GetCurrentDirectory())
+                .UseStartup<Startup>()
+                .UseApplicationInsights()
+                .Build();
 
-                    webHostCancellationTokenSource.Cancel();
+            webHost.Run();
 
-                    end.WaitOne();
-                };
-
-                webHost = new WebHostBuilder()
-                    .UseKestrel()
-                    .UseUrls("http://*:57317")
-                    .UseContentRoot(Directory.GetCurrentDirectory())                    
-                    .UseStartup<Startup>()
-                    .UseApplicationInsights()
-                    .Build();
-
-                triggerHost = new TriggerHost(webHost.Services);
-
-                webHostTask = Task.Factory.StartNew(() => webHost.Run());
-                triggerHostTask = triggerHost.Start();
-
-                // WhenAny to handle any task termination with exception, 
-                // or gracefully termination of webHostTask
-                Task.WhenAny(webHostTask, triggerHostTask).Wait();
-            }
-            finally
-            {
-                Console.WriteLine("Terminating...");
-
-                webHostCancellationTokenSource.Cancel();
-                triggerHost?.Cancel();
-
-                webHostTask?.Wait();
-                triggerHostTask?.Wait();
-
-                end.Set();
-            }
+            Console.WriteLine("Terminated");
         }
     }
 }

@@ -2,7 +2,6 @@
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Google.Apis.Auth;
-using Lykke.Job.LucyTelegramBot.AzureRepositories.Telegram;
 using Lykke.Job.LucyTelegramBot.Core;
 using Lykke.Job.LucyTelegramBot.Core.Telegram;
 using Lykke.Job.LucyTelegramBot.Models;
@@ -46,27 +45,27 @@ namespace Lykke.Job.LucyTelegramBot.Controllers
 
                 if (webSignature == null)
                 {
-                    return this.JsonFailResult("Technical problem. Sorry.", "#googleSignIn");
+                    return JsonFailResult("Technical problem. Sorry.", "#googleSignIn");
                 }
 
                 if (!string.Equals(webSignature.Audience, _googleAuthSettings.ApiClientId))
                 {
-                    return this.JsonFailResult("Technical problem. Sorry.", "#googleSignIn");
+                    return JsonFailResult("Technical problem. Sorry.", "#googleSignIn");
                 }
 
                 if (string.IsNullOrWhiteSpace(webSignature.Email))
                 {
-                    return this.JsonFailResult("Email is empty", "#googleSignIn");
+                    return JsonFailResult("Email is empty", "#googleSignIn");
                 }
 
                 if (!Regex.IsMatch(webSignature.Email, _googleAuthSettings.AvailableEmailsRegex))
                 {
-                    return this.JsonFailResult("Email should be at lykke", "#googleSignIn");
+                    return JsonFailResult("Email should be at lykke", "#googleSignIn");
                 }
 
                 if (!webSignature.IsEmailValidated)
                 {
-                    return this.JsonFailResult("Email is not valid.", "#googleSignIn");
+                    return JsonFailResult("Email is not valid.", "#googleSignIn");
                 }              
 
                 var token = Guid.NewGuid().ToString();
@@ -77,7 +76,7 @@ namespace Lykke.Job.LucyTelegramBot.Controllers
             }
             catch (InvalidJwtException)
             {
-                return this.JsonFailResult("Technical problem. Sorry.", "#googleSignIn");
+                return JsonFailResult("Technical problem. Sorry.", "#googleSignIn");
             }
         }
 

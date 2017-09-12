@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
@@ -8,6 +9,7 @@ using Lykke.Job.LucyTelegramBot.Core;
 using Lykke.Job.LucyTelegramBot.Models;
 using Lykke.Job.LucyTelegramBot.Modules;
 using Lykke.JobTriggers.Extenstions;
+using Lykke.JobTriggers.Triggers;
 using Lykke.Logs;
 using Lykke.SettingsReader;
 using Lykke.SlackNotification.AzureQueue;
@@ -23,6 +25,9 @@ namespace Lykke.Job.LucyTelegramBot
         public IHostingEnvironment Environment { get; }
         public IContainer ApplicationContainer { get; set; }
         public IConfigurationRoot Configuration { get; }
+
+        private TriggerHost _triggerHost;
+        private Task _triggerHostTask;
 
         public Startup(IHostingEnvironment env)
         {
@@ -92,10 +97,26 @@ namespace Lykke.Job.LucyTelegramBot
             app.UseSwagger();
             app.UseSwaggerUi();
 
-            appLifetime.ApplicationStopped.Register(() =>
-            {
-                ApplicationContainer.Dispose();
-            });
+            appLifetime.ApplicationStarted.Register(Start);
+            appLifetime.ApplicationStopping.Register(StopApplication);
+            appLifetime.ApplicationStopped.Register(CleanUp);
+        }
+
+        private void Start()
+        {
+            _triggerHost = new TriggerHost(new AutofacServiceProvider(ApplicationContainer));
+            _triggerHostTask = _triggerHost.Start();
+        }
+
+        private void StopApplication()
+        {
+            _triggerHost?.Cancel();
+            _triggerHostTask?.Wait();
+        }
+
+        private void CleanUp()
+        {
+            ApplicationContainer.Dispose();
         }
 
         private static ILog CreateLogWithSlack(IServiceCollection services, AppSettings settings)
