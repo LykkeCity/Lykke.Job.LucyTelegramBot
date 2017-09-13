@@ -67,7 +67,6 @@ namespace Lykke.Job.LucyTelegramBot.Modules
             builder.RegisterType<SimpleTextResponseCommand>().As<IBotCommandHandler>().SingleInstance();
             builder.RegisterType<BackCommand>().As<IBotCommandHandler>().SingleInstance();
             builder.RegisterType<StartCommand>().As<IBotCommandHandler>().SingleInstance();
-            builder.RegisterType<GetPaidCommand>().As<IBotCommandHandler>().SingleInstance();
             builder.RegisterType<InfoCommand>().As<IBotCommandHandler>().SingleInstance();
             builder.RegisterType<PostBioCommand>().As<IBotCommandHandler>().SingleInstance();
             builder.RegisterType<FeedbackCommand>().As<IBotCommandHandler>().SingleInstance();
