@@ -57,12 +57,12 @@ namespace Lykke.Job.LucyTelegramBot.AzureRepositories.Telegram
 
         public async Task<ITgEmployee> Find(string username)
         {
-            return (await _tableStorage.GetDataAsync(e => e.UserName == username)).SingleOrDefault();
+            return (await _tableStorage.GetDataAsync(e => e.UserName == username)).FirstOrDefault();
         }
 
         public async Task<ITgEmployee> Get(long chatId)
         {
-            return (await _tableStorage.GetDataAsync(e => e.ChatId == chatId)).SingleOrDefault();
+            return (await _tableStorage.GetDataAsync(e => e.ChatId == chatId)).FirstOrDefault();
         }
 
         public async Task AddUserAsync(string id, string email)
@@ -100,7 +100,7 @@ namespace Lykke.Job.LucyTelegramBot.AzureRepositories.Telegram
 
         public async Task UpdateBio(long chatId, string bio)
         {
-            var emp = (await _tableStorage.GetDataAsync(e => e.ChatId == chatId)).SingleOrDefault();
+            var emp = (await _tableStorage.GetDataAsync(e => e.ChatId == chatId)).FirstOrDefault();
 
             if (emp != null)
             {
