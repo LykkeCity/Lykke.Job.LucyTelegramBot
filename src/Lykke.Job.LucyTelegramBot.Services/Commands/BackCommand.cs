@@ -42,9 +42,9 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
             }
         }
 
-        public Task Reply(LykkeBotCommand command, Message message)
+        public Task<bool> Reply(LykkeBotCommand command, Message message)
         {
-            return Task.FromResult(0);
+            return Task.FromResult(true);
         }
     }
 }

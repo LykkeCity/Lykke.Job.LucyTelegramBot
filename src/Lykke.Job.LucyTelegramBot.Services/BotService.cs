@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Lykke.Job.LucyTelegramBot.Core;
 using Lykke.Job.LucyTelegramBot.Core.Services;
@@ -48,7 +49,7 @@ namespace Lykke.Job.LucyTelegramBot.Services
             {
                 command = _settings.Commands.FirstOrDefault(item => item.Name.Equals(state.Command, StringComparison.InvariantCultureIgnoreCase));
 
-                if (command != null)
+                if (command != null && (command.HasReply || !string.IsNullOrEmpty(command.ReplyText)))
                 {
                     await ReplyCommandAsync(command, message);
                     return;
@@ -79,9 +80,10 @@ namespace Lykke.Job.LucyTelegramBot.Services
         public async Task ReplyCommandAsync(LykkeBotCommand command, Message message)
         {
             var handler = _botCommandHandlerFactory.GetCommand(command.Name);
-            await handler.Reply(command, message);
+            bool processed = await handler.Reply(command, message);
             var parentCommand = _settings.Commands.FirstOrDefault(item => item.Commands.Contains(command.Name));
-            await _userStateRepository.SetStateAsync(message.Chat.Id, parentCommand?.Name, null);
+            await _userStateRepository.SetStateAsync(message.Chat.Id, parentCommand?.Name, processed ? null : command.Name);
+
         }
     }
 }
