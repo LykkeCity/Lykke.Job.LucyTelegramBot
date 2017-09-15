@@ -70,6 +70,7 @@ namespace Lykke.Job.LucyTelegramBot.Modules
             builder.RegisterType<InfoCommand>().As<IBotCommandHandler>().SingleInstance();
             builder.RegisterType<PostBioCommand>().As<IBotCommandHandler>().SingleInstance();
             builder.RegisterType<FeedbackCommand>().As<IBotCommandHandler>().SingleInstance();
+            builder.RegisterType<TeamOverviewCommand>().As<IBotCommandHandler>().SingleInstance();
 
             builder.RegisterType<EmailFacadeService>().As<IEmailFacadeService>();
 

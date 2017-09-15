@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Lykke.Job.LucyTelegramBot.Core.Domain;
 
 namespace Lykke.Job.LucyTelegramBot.Core.Telegram
@@ -12,5 +13,6 @@ namespace Lykke.Job.LucyTelegramBot.Core.Telegram
         Task TryRemoveAsync(string email);
         Task UpdateEmployeeInfo(string id, long chatId, string username, string firstName, string lastName);
         Task UpdateBio(long chatId, string bio);
+        Task<IEnumerable<ITgEmployee>> GetEmployeesWithBio();
     }
 }
