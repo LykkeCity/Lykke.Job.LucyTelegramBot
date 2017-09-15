@@ -1,12 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Lykke.Job.LucyTelegramBot.Core;
 using Lykke.Job.LucyTelegramBot.Core.Services;
 using Lykke.Job.LucyTelegramBot.Core.Telegram;
-using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace Lykke.Job.LucyTelegramBot.Services.Commands
 {
@@ -26,7 +22,7 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
             _settings = settings;
         }
 
-        public string[] SupportedCommands => new[] { BotCommands.GetUserInfo };
+        public string[] SupportedCommands => new[] { BotCommands.GetUserInfo, BotCommands.ReadBio };
 
         public async Task Execute(LykkeBotCommand command, Message message)
         {
