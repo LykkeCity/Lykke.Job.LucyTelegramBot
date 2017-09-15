@@ -14,21 +14,15 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
     {
         private readonly IBotService _botService;
         private readonly IEmailFacadeService _emailFacadeService;
-        private readonly ITgEmployeeRepository _employeeRepository;
-        private readonly KeyboardsFactory _keyboardsFactory;
         private readonly LucyTelegramBotSettings _settings;
 
         public FeedbackCommand(
             IBotService botService,
             IEmailFacadeService emailFacadeService,
-            ITgEmployeeRepository employeeRepository, 
-            KeyboardsFactory keyboardsFactory,
             LucyTelegramBotSettings settings)
         {
             _botService = botService;
             _emailFacadeService = emailFacadeService;
-            _employeeRepository = employeeRepository;
-            _keyboardsFactory = keyboardsFactory;
             _settings = settings;
         }
 
@@ -39,7 +33,7 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
             await _botService.SendTextMessageAsync(message, command, command.IntroText);
         }
 
-        public async Task Reply(LykkeBotCommand command, Message message)
+        public async Task<bool> Reply(LykkeBotCommand command, Message message)
         {
             try
             {
@@ -49,10 +43,11 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
             catch
             {
                 await _botService.SendTextMessageAsync(message, command, _settings.Messages.ErrorSendingFeedback);
-                return;
+                return true;
             }
 
             await _botService.SendTextMessageAsync(message, command, command.ReplyText);
+            return true;
         }
     }
 }

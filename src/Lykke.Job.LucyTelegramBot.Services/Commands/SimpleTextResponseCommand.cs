@@ -23,9 +23,9 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
             await _botService.SendTextMessageAsync(message, command, command.IntroText);
         }
 
-        public Task Reply(LykkeBotCommand command, Message message)
+        public Task<bool> Reply(LykkeBotCommand command, Message message)
         {
-            return Task.FromResult(0);
+            return Task.FromResult(true);
         }
     }
 }

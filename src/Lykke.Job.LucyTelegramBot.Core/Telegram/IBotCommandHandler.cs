@@ -7,6 +7,6 @@ namespace Lykke.Job.LucyTelegramBot.Core.Telegram
     {
         string[] SupportedCommands { get; }
         Task Execute(LykkeBotCommand command, Message message);
-        Task Reply(LykkeBotCommand command, Message message);
+        Task<bool> Reply(LykkeBotCommand command, Message message);
     }
 }

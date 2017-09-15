@@ -35,13 +35,13 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
             var sb = new StringBuilder();
 
             foreach (var employee in employees.OrderBy(item => item.FirstName))
-                sb.AppendLine($"{employee.FullName()} (@{employee.UserName})\r\n");
+                sb.AppendLine($"{employee.FullName()} (@{employee.UserName})");
 
             await _botService.SendTextMessageAsync(message, command, command.IntroText);
             await _botService.SendTextMessageAsync(message, command, sb.ToString());
         }
 
-        public async Task Reply(LykkeBotCommand command, Message message)
+        public async Task<bool> Reply(LykkeBotCommand command, Message message)
         {
             var userinfo = await _employeeRepository.Find(message.Text);
 
@@ -50,6 +50,7 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
                 : _settings.Messages.UserNotFound;
 
             await _botService.SendTextMessageAsync(message, command, text);
+            return true;
         }
     }
 }

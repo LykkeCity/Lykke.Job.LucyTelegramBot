@@ -26,13 +26,15 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
             await _botService.SendTextMessageAsync(message, command, command.IntroText);
         }
 
-        public async Task Reply(LykkeBotCommand command, Message message)
+        public async Task<bool> Reply(LykkeBotCommand command, Message message)
         {
             if (!string.IsNullOrWhiteSpace(message.Text))
             {
                 await _employeeRepository.UpdateBio(message.Chat.Id, message.Text);
                 await _botService.SendTextMessageAsync(message, command, command.ReplyText);
             }
+
+            return true;
         }
     }
 }

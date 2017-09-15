@@ -41,7 +41,8 @@ namespace Lykke.Job.LucyTelegramBot.Core
         public string ReplyText { get; set; }
         [Optional]
         public string[] Commands { get; set; } = Array.Empty<string>();
-        public bool HasReply => !string.IsNullOrEmpty(ReplyText);
+        [Optional]
+        public bool HasReply { get; set; }
     }
 
     public class DbSettings

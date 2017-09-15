@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Common.RemoteUi;
 using Lykke.Job.LucyTelegramBot.Core;
 using Lykke.Job.LucyTelegramBot.Core.Services;
 using Lykke.Job.LucyTelegramBot.Core.Telegram;
@@ -29,7 +30,7 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
             await _botService.SendTextMessageAsync(message, command, command.IntroText);
         }
 
-        public async Task Reply(LykkeBotCommand command, Message message)
+        public async Task<bool> Reply(LykkeBotCommand command, Message message)
         {
             var userinfo = await _employeeRepository.Find(message.Text);
 
@@ -38,6 +39,8 @@ namespace Lykke.Job.LucyTelegramBot.Services.Commands
                 : _settings.Messages.UserNotFound;
 
             await _botService.SendTextMessageAsync(message, command, text);
+            //don't clear the state
+            return false;
         }
     }
 }
