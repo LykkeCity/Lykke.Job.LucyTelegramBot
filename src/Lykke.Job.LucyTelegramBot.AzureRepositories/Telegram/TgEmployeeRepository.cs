@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AzureStorage;
@@ -106,6 +107,11 @@ namespace Lykke.Job.LucyTelegramBot.AzureRepositories.Telegram
                 emp.Bio = bio;
                 await _tableStorage.InsertOrMergeAsync(emp);
             }
+        }
+
+        public async Task<IEnumerable<ITgEmployee>> GetEmployeesWithBio()
+        {
+            return await _tableStorage.GetDataAsync(e => !string.IsNullOrEmpty(e.Bio));
         }
     }
 }
