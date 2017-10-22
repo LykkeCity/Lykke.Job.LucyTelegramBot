@@ -29,6 +29,8 @@ namespace Lykke.Job.LucyTelegramBot
         private TriggerHost _triggerHost;
         private Task _triggerHostTask;
 
+        private ILog _log;
+
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -56,13 +58,11 @@ namespace Lykke.Job.LucyTelegramBot
             });
 
             var builder = new ContainerBuilder();
-            var appSettings = Environment.IsDevelopment()
-                ? Configuration.Get<AppSettings>()
-                : HttpSettingsLoader.Load<AppSettings>(Configuration.GetValue<string>("SettingsUrl"));
+            var settingsManager = Configuration.LoadSettings<AppSettings>("SettingsUrl");
+            var appSettings = settingsManager.CurrentValue;
+            _log = CreateLogWithSlack(services, settingsManager, appSettings);
 
-            var log = CreateLogWithSlack(services, appSettings);
-
-            builder.RegisterModule(new JobModule(appSettings, log));
+            builder.RegisterModule(new JobModule(settingsManager, _log));
 
             if (string.IsNullOrWhiteSpace(appSettings.LucyTelegramBotJob.Db.TriggerQueueConnectionString))
             {
@@ -106,6 +106,8 @@ namespace Lykke.Job.LucyTelegramBot
         {
             _triggerHost = new TriggerHost(new AutofacServiceProvider(ApplicationContainer));
             _triggerHostTask = _triggerHost.Start();
+
+            _log.WriteMonitorAsync("", "", "Started").Wait();
         }
 
         private void StopApplication()
@@ -119,23 +121,31 @@ namespace Lykke.Job.LucyTelegramBot
             ApplicationContainer.Dispose();
         }
 
-        private static ILog CreateLogWithSlack(IServiceCollection services, AppSettings settings)
+        private static ILog CreateLogWithSlack(
+            IServiceCollection services,
+            IReloadingManager<AppSettings> settingsManager,
+            AppSettings settings)
         {
             var consoleLogger = new LogToConsole();
+            var slackService = services.UseSlackNotificationsSenderViaAzureQueue(
+                new AzureQueueIntegration.AzureQueueSettings
+                {
+                    ConnectionString = settings.SlackNotifications.AzureQueue.ConnectionString,
+                    QueueName = settings.SlackNotifications.AzureQueue.QueueName
+                },
+                consoleLogger);
+
+            var log = services.UseLogToAzureStorage(
+                settingsManager.ConnectionString(i => i.LucyTelegramBotJob.Db.LogsConnString),
+                slackService,
+                "LucyTelegramBotLog",
+                consoleLogger);
+
             var aggregateLogger = new AggregateLogger();
-
             aggregateLogger.AddLog(consoleLogger);
+            aggregateLogger.AddLog(log);
 
-            var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueIntegration.AzureQueueSettings
-            {
-                ConnectionString = settings.SlackNotifications.AzureQueue.ConnectionString,
-                QueueName = settings.SlackNotifications.AzureQueue.QueueName
-            }, aggregateLogger);
-
-            var log = services.UseLogToAzureStorage(settings.LucyTelegramBotJob.Db.LogsConnString, slackService,
-                "LucyTelegramBotLog", new LogToConsole());
-
-            return log;
+            return aggregateLogger;
         }
     }
 }

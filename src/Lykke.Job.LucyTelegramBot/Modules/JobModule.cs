@@ -1,19 +1,20 @@
-﻿using Autofac;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using AzureStorage.Tables;
-using Common.Log;
-using Lykke.Job.LucyTelegramBot.Core.Services;
-using Lykke.Job.LucyTelegramBot.Core.Telegram;
-using Lykke.Job.LucyTelegramBot.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Telegram.Bot;
+using Common.Log;
 using AzureStorage;
 using AzureStorage.Blob;
 using AzureStorage.Queue;
-using Lykke.Job.LucyTelegramBot.AzureRepositories.Telegram;
-using Lykke.Job.LucyTelegramBot.Core;
-using Lykke.Job.LucyTelegramBot.Services.Commands;
+using AzureStorage.Tables;
+using Lykke.SettingsReader;
 using Lykke.Service.EmailSender;
+using Lykke.Job.LucyTelegramBot.Core;
+using Lykke.Job.LucyTelegramBot.Core.Services;
+using Lykke.Job.LucyTelegramBot.Core.Telegram;
+using Lykke.Job.LucyTelegramBot.AzureRepositories.Telegram;
+using Lykke.Job.LucyTelegramBot.Services;
+using Lykke.Job.LucyTelegramBot.Services.Commands;
 
 namespace Lykke.Job.LucyTelegramBot.Modules
 {
@@ -23,10 +24,11 @@ namespace Lykke.Job.LucyTelegramBot.Modules
         private readonly ILog _log;
         // NOTE: you can remove it if you don't need to use IServiceCollection extensions to register service specific dependencies
         private readonly IServiceCollection _services;
+        private readonly IReloadingManager<AppSettings> _settingsManager;
 
-        public JobModule(AppSettings settings, ILog log)
+        public JobModule(IReloadingManager<AppSettings> settingsManager, ILog log)
         {
-            _settings = settings;
+            _settingsManager = settingsManager;
             _log = log;
 
             _services = new ServiceCollection();
@@ -43,18 +45,24 @@ namespace Lykke.Job.LucyTelegramBot.Modules
                 .As<ILog>()
                 .SingleInstance();
 
-            builder.RegisterInstance(new OffsetRepository(
-                AzureTableStorage<OffsetRecord>.Create(() => _settings.LucyTelegramBotJob.Db.DataConnString, "TgUpdatesOffset", _log))).As<IOffsetRepository>();
-            builder.RegisterInstance(new TgEmployeeRepository(
-                AzureTableStorage<TgEmployee>.Create(() => _settings.LucyTelegramBotJob.Db.DataConnString, "TgEmployees", _log))).As<ITgEmployeeRepository>();
-            builder.RegisterInstance(new HandledMessagesRepository(
-                AzureTableStorage<HandledMessageRecord>.Create(() => _settings.LucyTelegramBotJob.Db.DataConnString, "TgHandledMessages", _log))).As<IHandledMessagesRepository>();
-            builder.RegisterInstance(new TgUserStateRepository(
-                AzureTableStorage<TgUserStateEntity>.Create(() => _settings.LucyTelegramBotJob.Db.DataConnString, "TgUserStates", _log))).As<ITgUserStateRepository>();
-            builder.RegisterInstance(new AzureBlobStorage(_settings.LucyTelegramBotJob.Db.DataConnString)).As<IBlobStorage>();
-            
-            builder.RegisterInstance(new AzureQueueExt(_settings.LucyTelegramBotJob.Db.TriggerQueueConnectionString, "lucy-tg-updates")).As<IQueueExt>();
-            
+            var offsetRecordStorage = AzureTableStorage<OffsetRecord>.Create(
+                _settingsManager.ConnectionString(i => i.LucyTelegramBotJob.Db.DataConnString), "TgUpdatesOffset", _log);
+            builder.RegisterInstance(new OffsetRepository(offsetRecordStorage)).As<IOffsetRepository>();
+            var tgEmployeeStorage = AzureTableStorage<TgEmployee>.Create(
+                _settingsManager.ConnectionString(i => i.LucyTelegramBotJob.Db.DataConnString), "TgEmployees", _log);
+            builder.RegisterInstance(new TgEmployeeRepository(tgEmployeeStorage)).As<ITgEmployeeRepository>();
+            var handledMessageRecordStorage = AzureTableStorage<HandledMessageRecord>.Create(
+                _settingsManager.ConnectionString(i => i.LucyTelegramBotJob.Db.DataConnString), "TgHandledMessages", _log);
+            builder.RegisterInstance(new HandledMessagesRepository(handledMessageRecordStorage)).As<IHandledMessagesRepository>();
+            var tgUserStateEntityStorage = AzureTableStorage<TgUserStateEntity>.Create(
+                _settingsManager.ConnectionString(i => i.LucyTelegramBotJob.Db.DataConnString), "TgUserStates", _log);
+            builder.RegisterInstance(new TgUserStateRepository(tgUserStateEntityStorage)).As<ITgUserStateRepository>();
+            var blobStorage = AzureBlobStorage.Create(_settingsManager.ConnectionString(i => i.LucyTelegramBotJob.Db.DataConnString));
+            builder.RegisterInstance(blobStorage).As<IBlobStorage>();
+            var queue = AzureQueueExt.Create(
+                _settingsManager.ConnectionString(i => i.LucyTelegramBotJob.Db.TriggerQueueConnectionString), "lucy-tg-updates");
+            builder.RegisterInstance(queue).As<IQueueExt>();
+
             builder.RegisterType<MessageHandler>()
                 .As<IMessageHandler>();
             builder.RegisterType<MessagePoller>()
