@@ -26,9 +26,13 @@ namespace Lykke.Job.LucyTelegramBot.Modules
         private readonly IServiceCollection _services;
         private readonly IReloadingManager<AppSettings> _settingsManager;
 
-        public JobModule(IReloadingManager<AppSettings> settingsManager, ILog log)
+        public JobModule(
+            IReloadingManager<AppSettings> settingsManager,
+            AppSettings settings,
+            ILog log)
         {
             _settingsManager = settingsManager;
+            _settings = settings;
             _log = log;
 
             _services = new ServiceCollection();

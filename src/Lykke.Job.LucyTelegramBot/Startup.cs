@@ -62,7 +62,7 @@ namespace Lykke.Job.LucyTelegramBot
             var appSettings = settingsManager.CurrentValue;
             _log = CreateLogWithSlack(services, settingsManager, appSettings);
 
-            builder.RegisterModule(new JobModule(settingsManager, _log));
+            builder.RegisterModule(new JobModule(settingsManager, appSettings, _log));
 
             if (string.IsNullOrWhiteSpace(appSettings.LucyTelegramBotJob.Db.TriggerQueueConnectionString))
             {
