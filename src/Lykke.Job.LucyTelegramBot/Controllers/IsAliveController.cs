@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Net;
-using Lykke.Job.LucyTelegramBot.Core.Services;
 using Lykke.Job.LucyTelegramBot.Models;
 using Microsoft.AspNetCore.Mvc;
-using Swashbuckle.SwaggerGen.Annotations;
+using Microsoft.Extensions.PlatformAbstractions;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Lykke.Job.LucyTelegramBot.Controllers
 {
@@ -19,11 +19,12 @@ namespace Lykke.Job.LucyTelegramBot.Controllers
         [ProducesResponseType(typeof(IsAliveResponse), (int)HttpStatusCode.OK)]
         [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.InternalServerError)]
         public IActionResult Get()
-        {            
+        {
             return Ok(new IsAliveResponse
             {
-                Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion,
-                Env = Environment.GetEnvironmentVariable("ENV_INFO")                                
+                Name = PlatformServices.Default.Application.ApplicationName,
+                Version = PlatformServices.Default.Application.ApplicationVersion,
+                Env = Environment.GetEnvironmentVariable("ENV_INFO"),
             });
         }
     }

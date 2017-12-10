@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Common.Log;
 using Lykke.Job.LucyTelegramBot.Core;
 using Lykke.Job.LucyTelegramBot.Core.Services;
 using Lykke.Job.LucyTelegramBot.Core.Telegram;
@@ -18,19 +18,22 @@ namespace Lykke.Job.LucyTelegramBot.Services
         private readonly KeyboardsFactory _keyboardsFactory;
         private readonly ITgUserStateRepository _userStateRepository;
         private readonly LucyTelegramBotSettings _settings;
+        private readonly ILog _log;
 
         public BotService(
             ITelegramBotClient botClient,
             IBotCommandHandlerFactory botCommandHandlerFactory,
             KeyboardsFactory keyboardsFactory,
             ITgUserStateRepository userStateRepository,
-            LucyTelegramBotSettings settings)
+            LucyTelegramBotSettings settings,
+            ILog log)
         {
             _botClient = botClient;
             _botCommandHandlerFactory = botCommandHandlerFactory;
             _keyboardsFactory = keyboardsFactory;
             _userStateRepository = userStateRepository;
             _settings = settings;
+            _log = log;
         }
 
         public async Task ProcessMessageAsync(Message message)
@@ -56,17 +59,41 @@ namespace Lykke.Job.LucyTelegramBot.Services
                 }
             }
 
-            await _botClient.SendTextMessageAsync(message.Chat.Id, _settings.Messages.CommandNotFound, ParseMode.Markdown);
+            try
+            {
+                await _botClient.SendTextMessageAsync(message.Chat.Id, _settings.Messages.CommandNotFound, ParseMode.Markdown);
+            }
+            catch (Exception ex)
+            {
+                await _log.WriteErrorAsync(nameof(BotService), nameof(ProcessMessageAsync), ex);
+                throw;
+            }
         }
 
         public async Task SendTextMessageAsync(Message message, LykkeBotCommand command, string text)
         {
-            await _botClient.SendTextMessageAsync(message.Chat.Id, text, ParseMode.Markdown, false, false, 0, _keyboardsFactory.GetKeyboard(command?.Name));
+            try
+            {
+                await _botClient.SendTextMessageAsync(message.Chat.Id, text, ParseMode.Markdown, false, false, 0, _keyboardsFactory.GetKeyboard(command?.Name));
+            }
+            catch (Exception ex)
+            {
+                await _log.WriteErrorAsync(nameof(BotService), nameof(SendTextMessageAsync), ex);
+                throw;
+            }
         }
 
         public async Task SendDocumentAsync(Message message, FileToSend file)
         {
-            await _botClient.SendDocumentAsync(message.Chat.Id, file);
+            try
+            {
+                await _botClient.SendDocumentAsync(message.Chat.Id, file);
+            }
+            catch (Exception ex)
+            {
+                await _log.WriteErrorAsync(nameof(BotService), nameof(SendDocumentAsync), ex);
+                throw;
+            }
         }
 
         public async Task ExecuteCommandAsync(LykkeBotCommand command, Message message)
